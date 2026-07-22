@@ -7,26 +7,28 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'KaiTi','STKaiti','楷体',serif;background:linear-gradient(170deg,#faf5ef 0%,#f3ece2 50%,#f8f2ea 100%);height:100vh;overflow:hidden}
+body{background:#f7f3ee;height:100vh;overflow:hidden;font-family:'KaiTi','STKaiti','楷体',serif}
 #map{width:100%;height:100%}
-#top{position:absolute;top:20px;left:28px;z-index:999;pointer-events:none}
-#top h1{font-size:24px;font-weight:700;color:#2c3829;letter-spacing:3px}
-#top span{font-size:12px;color:#8a8070}
-#legend{position:absolute;bottom:28px;left:28px;z-index:999;background:rgba(255,255,255,0.88);border-radius:12px;padding:14px 18px;box-shadow:0 2px 12px rgba(0,0,0,0.06)}
-#legend .t{font-size:12px;font-weight:700;color:#2c3829;margin-bottom:6px}
-#legend .bar{width:150px;height:7px;border-radius:4px;margin:4px 0}
-#legend .l{display:flex;justify-content:space-between;font-size:10px;color:#a09080}
-#legend .n{font-size:10px;color:#b0a090;margin-top:4px}
-#toggle{position:absolute;top:22px;right:28px;z-index:999;display:flex;gap:6px}
-#toggle button{padding:6px 16px;border-radius:16px;border:1px solid #d8ccb8;background:rgba(255,255,255,0.85);font-family:inherit;font-size:12px;color:#6b7060;cursor:pointer;transition:0.25s}
-#toggle button.on{background:#2c3829;color:#e6dac8;border-color:#2c3829}
-.leaflet-control-zoom a{background:#fff!important;color:#2c3829!important;border-radius:8px!important;margin:2px!important;box-shadow:0 1px 4px rgba(0,0,0,0.06)!important}
+#top{position:absolute;top:24px;left:32px;z-index:999;pointer-events:none}
+#top h1{font-size:26px;font-weight:700;color:#3a2828;letter-spacing:4px;margin-bottom:2px;text-shadow:0 1px 0 rgba(255,255,255,0.6)}
+#top span{font-size:12px;color:#9a8880;letter-spacing:1px}
+#legend{position:absolute;bottom:32px;left:32px;z-index:999;background:rgba(255,255,255,0.9);border-radius:12px;padding:16px 20px;box-shadow:0 2px 16px rgba(0,0,0,0.05)}
+#legend .t{font-size:12px;font-weight:700;color:#3a2828;margin-bottom:8px}
+#legend .bar{width:160px;height:6px;border-radius:3px;margin:4px 0}
+#legend .l{display:flex;justify-content:space-between;font-size:10px;color:#b0a098}
+#legend .n{font-size:10px;color:#c0b0a8;margin-top:4px}
+#toggle{position:absolute;top:26px;right:32px;z-index:999;display:flex;gap:8px}
+#toggle button{padding:7px 18px;border-radius:18px;border:1px solid #ddd0c0;background:rgba(255,255,255,0.82);font-family:inherit;font-size:12px;color:#6a5a50;cursor:pointer;transition:0.25s;letter-spacing:1px}
+#toggle button:hover{background:#fff}
+#toggle button.on{background:#3a2828;color:#f0e4d4;border-color:#3a2828}
+.leaflet-control-zoom{border:none!important;box-shadow:0 2px 8px rgba(0,0,0,0.06)!important}
+.leaflet-control-zoom a{background:#fff!important;color:#3a2828!important;border-radius:8px!important;margin:3px!important;border:none!important}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="top"><h1>纹绣月季 · 全国空间热度图</h1><span>Wenxiu Rose · 5518 个花卉景点 POI · 核密度分析</span></div>
+<div id="top"><h1>纹绣月季 · 空间热度</h1><span>Wenxiu Rose Spatial Heat · 5518 POIs</span></div>
 
 <div id="toggle">
   <button class="on" onclick="setLayer('heat')">热力</button>
@@ -34,10 +36,10 @@ body{font-family:'KaiTi','STKaiti','楷体',serif;background:linear-gradient(170
 </div>
 
 <div id="legend">
-  <div class="t">空间热度</div>
-  <div class="bar" style="background:linear-gradient(90deg,#edf4e8,#b8d4a8,#7bb868,#4a8a3a,#2c5a20)"></div>
-  <div class="l"><span>低</span><span>中</span><span>高</span></div>
-  <div class="n">网红打卡×3 · 花海景区×2 · 花卉旅游×1 · 28城</div>
+  <div class="t">▲ 热度强度</div>
+  <div class="bar" style="background:linear-gradient(90deg,#f2ead8,#e8c49a,#d49160,#b85540,#7a2030)"></div>
+  <div class="l"><span>低</span><span></span><span></span><span></span><span>高</span></div>
+  <div class="n">网红打卡×3 · 花海景区×2 · 旅游×1</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -46,13 +48,12 @@ body{font-family:'KaiTi','STKaiti','楷体',serif;background:linear-gradient(170
 var heatLayer, markerLayer, map;
 
 map = L.map('map', {
-  center: [27.5, 104],
-  zoom: 7,
-  minZoom: 5,
+  center: [29, 106],
+  zoom: 6,
+  minZoom: 3,
   maxZoom: 16,
   zoomControl: true,
-  attributionControl: false,
-  wheelPxPerZoomLevel: 80
+  attributionControl: false
 });
 
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
@@ -64,24 +65,29 @@ fetch('data/wenxiu_heat.json')
   .then(r => r.json())
   .then(data => {
     heatLayer = L.heatLayer(data, {
-      radius: 28, blur: 18, maxZoom: 12, max: 1.0,
+      radius: 30, blur: 20, maxZoom: 12, max: 1.0,
       gradient: {
-        0.1: '#edf4e8',
-        0.3: '#b8d4a8',
-        0.5: '#7bb868',
-        0.7: '#4a8a3a',
-        0.85: '#2c5a20',
-        1.0: '#1a3a12'
+        0.0: 'rgba(0,0,0,0)',
+        0.1: '#f2ead8',
+        0.3: '#e8c49a',
+        0.5: '#d49160',
+        0.7: '#b85540',
+        0.85: '#8a2a3a',
+        1.0: '#5c1018'
       }
     }).addTo(map);
 
     markerLayer = L.layerGroup();
     data.forEach(function(pt) {
       if (pt[2] > 0.5) {
+        var alpha = pt[2];
+        var color = alpha > 0.8 ? '#8a2a3a' : (alpha > 0.65 ? '#b85540' : '#d49160');
         L.circleMarker([pt[0], pt[1]], {
           radius: pt[2] * 8,
-          fillColor: pt[2] > 0.8 ? '#1a3a12' : (pt[2] > 0.65 ? '#4a8a3a' : '#7bb868'),
-          color: '#fff', weight: 0.6, fillOpacity: 0.7
+          fillColor: color,
+          color: 'rgba(255,255,255,0.4)',
+          weight: 0.5,
+          fillOpacity: 0.65
         }).addTo(markerLayer);
       }
     });
