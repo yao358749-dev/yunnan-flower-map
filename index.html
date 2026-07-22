@@ -10,117 +10,146 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'KaiTi','STKaiti','楷体',serif;background:#faf5ef;height:100vh;overflow:hidden}
-#map{width:100%;height:100%}
-/* 顶部标题条 */
+#map{width:100%;height:100%;background:#f0ebe0}
 #topbar{position:absolute;top:16px;left:24px;z-index:999;pointer-events:none}
 #topbar h1{font-size:22px;font-weight:700;color:#2c3829;letter-spacing:2px;text-shadow:0 1px 2px rgba(255,255,255,0.8)}
 #topbar span{font-size:12px;color:#8a8070}
-/* 搜索 */
 #search-box{position:absolute;top:18px;right:24px;z-index:999}
 #search-box input{width:220px;padding:9px 16px;border-radius:20px;border:1px solid #d8c8b8;background:rgba(255,255,255,0.85);font-family:inherit;font-size:13px;color:#2c3829;outline:none;box-shadow:0 1px 4px rgba(0,0,0,0.06)}
 #search-box input::placeholder{color:#b0a090}
-/* 图例 */
-#legend{position:absolute;bottom:28px;left:24px;z-index:999;background:rgba(255,255,255,0.88);border-radius:10px;padding:12px 16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);font-size:11px}
+#legend{position:absolute;bottom:60px;left:24px;z-index:999;background:rgba(255,255,255,0.88);border-radius:10px;padding:12px 16px;box-shadow:0 1px 8px rgba(0,0,0,0.06);font-size:11px}
 #legend .row{display:flex;align-items:center;gap:8px;margin:4px 0;color:#555}
 #legend .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 #legend .sq{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-/* 筛选条 */
-#filters{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);z-index:999;display:flex;gap:6px}
+#filters{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;gap:6px}
 #filters span{padding:6px 14px;border-radius:16px;font-size:11px;cursor:pointer;background:rgba(255,255,255,0.85);color:#6b7060;border:1px solid #d8ccb8;transition:0.25s;white-space:nowrap;user-select:none}
 #filters span:hover,#filters span.on{background:#2c3829;color:#e6dac8;border-color:#2c3829}
-/* 聚类 */
 .marker-cluster-small{background-color:rgba(140,160,130,0.5)}.marker-cluster-small div{background-color:rgba(90,115,80,0.85);color:#fff}
 .marker-cluster-medium{background-color:rgba(120,140,110,0.5)}.marker-cluster-medium div{background-color:rgba(70,95,60,0.85);color:#fff}
 .marker-cluster-large{background-color:rgba(100,120,90,0.5)}.marker-cluster-large div{background-color:rgba(50,75,40,0.85);color:#fff}
 .leaflet-popup-content{font-family:'KaiTi','STKaiti','楷体',serif;font-size:12px;color:#3a3a3a}
 .leaflet-popup-content b{color:#2c3829}
+#loading{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2000;color:#8a8070;font-family:inherit;font-size:16px}
 </style>
 </head>
 <body>
-
-<div id="map"></div>
-
-<div id="topbar"><h1>云南省花卉种植基地</h1><span>Yunnan Flower Planting Sites · 1548 个点位</span></div>
-
-<div id="search-box"><input type="text" placeholder="搜索基地..." oninput="doSearch()" id="si"></div>
-
+<div id="map"><div id="loading">地图加载中...</div></div>
+<div id="topbar"><h1>云南省花卉种植基地</h1><span>Yunnan Flower Planting Sites</span></div>
+<div id="search-box"><input type="text" id="si" placeholder="搜索基地..." oninput="doSearch()"></div>
 <div id="legend">
   <div style="font-weight:700;color:#2c3829;margin-bottom:4px">图例</div>
-  <div class="row"><div class="dot" style="background:#c44b5a"></div> 月季/玫瑰基地</div>
+  <div class="row"><div class="dot" style="background:#c44b5a"></div> 月季/玫瑰</div>
   <div class="row"><div class="sq" style="background:#d4956b"></div> 观光庄园/花海</div>
   <div class="row"><div class="sq" style="background:#8b7e6b"></div> 产业园区/合作社</div>
-  <div class="row"><div class="dot" style="background:#7b9b6a"></div> 育种/种质基地</div>
+  <div class="row"><div class="dot" style="background:#7b9b6a"></div> 育种/种质</div>
 </div>
-
 <div id="filters">
   <span class="on" onclick="setFilter('all',this)">全部</span>
-  <span onclick="setFilter('玫瑰',this)">月季/玫瑰</span>
-  <span onclick="setFilter('庄园',this)">观光庄园</span>
-  <span onclick="setFilter('园区',this)">产业园区</span>
-  <span onclick="setFilter('合作社',this)">合作社</span>
-  <span onclick="setFilter('育种',this)">育种基地</span>
+  <span onclick="setFilter('rose',this)">月季/玫瑰</span>
+  <span onclick="setFilter('park',this)">观光庄园</span>
+  <span onclick="setFilter('zone',this)">产业园区</span>
+  <span onclick="setFilter('coop',this)">合作社</span>
+  <span onclick="setFilter('breed',this)">育种基地</span>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script>
-let allData=[],cluster,map,activeFilter='all';
+(function(){
+var allData=[], cluster, map, activeFilter='all';
 
-const icons={
-  rose:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#c44b5a;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>',iconSize:[12,12],popupAnchor:[0,-6]}),
-  park:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:2px;background:#d4956b;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>',iconSize:[12,12],popupAnchor:[0,-6]}),
-  org:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:2px;background:#8b7e6b;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>',iconSize:[12,12],popupAnchor:[0,-6]}),
-  breed:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#7b9b6a;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.25)"></div>',iconSize:[12,12],popupAnchor:[0,-6]}),
+// 图标
+var icons={
+  rose: L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#c44b5a;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+  park: L.divIcon({html:'<div style="width:14px;height:14px;border-radius:3px;background:#d4956b;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+  org:  L.divIcon({html:'<div style="width:14px;height:14px;border-radius:3px;background:#8b7e6b;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+  breed:L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#7b9b6a;border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
 };
 
 function pickIcon(kw){
-  if(kw.includes('玫瑰')||kw.includes('月季')) return icons.rose;
-  if(kw.includes('庄园')||kw.includes('花海')) return icons.park;
-  if(kw.includes('育种')||kw.includes('种质')) return icons.breed;
+  if(kw.indexOf('玫瑰')>=0 || kw.indexOf('月季')>=0) return icons.rose;
+  if(kw.indexOf('庄园')>=0 || kw.indexOf('花海')>=0) return icons.park;
+  if(kw.indexOf('育种')>=0 || kw.indexOf('种质')>=0) return icons.breed;
   return icons.org;
 }
 
-function matchFilter(kw,f){
+function matchFilter(kw, f){
   if(f==='all') return true;
-  if(f==='玫瑰'&&(kw.includes('玫瑰')||kw.includes('月季'))) return true;
-  if(f==='庄园'&&(kw.includes('庄园')||kw.includes('花海'))) return true;
-  if(f==='园区'&&(kw.includes('园区')||kw.includes('产业')||kw.includes('基地'))) return true;
-  if(f==='合作社'&&kw.includes('合作社')) return true;
-  if(f==='育种'&&(kw.includes('育种')||kw.includes('种质'))) return true;
+  if(f==='rose' && (kw.indexOf('玫瑰')>=0 || kw.indexOf('月季')>=0)) return true;
+  if(f==='park' && (kw.indexOf('庄园')>=0 || kw.indexOf('花海')>=0)) return true;
+  if(f==='zone' && (kw.indexOf('园区')>=0 || kw.indexOf('产业')>=0 || kw.indexOf('基地')>=0)) return true;
+  if(f==='coop' && kw.indexOf('合作社')>=0) return true;
+  if(f==='breed' && (kw.indexOf('育种')>=0 || kw.indexOf('种质')>=0)) return true;
   return false;
 }
 
-function render(){
+function doRender(){
+  if(!cluster) return;
   cluster.clearLayers();
-  let cnt=0;
-  const q=(document.getElementById('si').value||'').trim().toLowerCase();
-  allData.forEach(pt=>{
-    if(!matchFilter(pt.k,activeFilter)) return;
-    if(q && !pt.n.toLowerCase().includes(q) && !pt.a.toLowerCase().includes(q)) return;
-    const m=L.marker([pt.c[1],pt.c[0]],{icon:pickIcon(pt.k)});
-    m.bindPopup('<b>'+pt.n+'</b><br><span style="color:#888;font-size:11px">'+pt.t+' | '+pt.k+'</span><br><span style="color:#666">'+pt.a+'</span>');
-    cluster.addLayer(m);cnt++;
-  });
+  var q = (document.getElementById('si').value || '').trim().toLowerCase();
+  var cnt = 0;
+  for(var i=0; i<allData.length; i++){
+    var pt = allData[i];
+    if(!matchFilter(pt.k, activeFilter)) continue;
+    if(q && pt.n.toLowerCase().indexOf(q)<0 && pt.a.toLowerCase().indexOf(q)<0) continue;
+    var m = L.marker([pt.c[1], pt.c[0]], {icon: pickIcon(pt.k)});
+    m.bindPopup('<b>'+pt.n+'</b><br><span style="color:#888;font-size:11px">'+pt.t+' | '+pt.k+'</span><br><span style="color:#666;font-size:12px">'+pt.a+'</span>');
+    cluster.addLayer(m);
+    cnt++;
+  }
 }
 
-function setFilter(f,el){
-  activeFilter=f;
-  document.querySelectorAll('#filters span').forEach(s=>s.classList.remove('on'));
+window.setFilter = function(f, el){
+  activeFilter = f;
+  var all = document.querySelectorAll('#filters span');
+  for(var i=0; i<all.length; i++) all[i].classList.remove('on');
   el.classList.add('on');
-  render();
-}
-function doSearch(){render();}
+  doRender();
+};
 
-fetch('data/yunnan_rose_sites.min.json').then(r=>r.json()).then(d=>{
-  allData=d;
-  map=L.map('map',{center:[25.0,102.0],zoom:8,zoomControl:false,attributionControl:false});
-  new L.Control.Zoom({position:'topright'}).addTo(map);
-  L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',{subdomains:['1','2','3','4'],maxZoom:18}).addTo(map);
-  L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}',{subdomains:['1','2','3','4'],maxZoom:18,opacity:0.45}).addTo(map);
-  cluster=L.markerClusterGroup({chunkedLoading:true,maxClusterRadius:55,spiderfyOnMaxZoom:true,showCoverageOnHover:false,zoomToBoundsOnClick:true});
-  map.addLayer(cluster);
-  render();
+window.doSearch = function(){ doRender(); };
+
+// 初始化地图
+map = L.map('map', {
+  center: [25.0, 102.0],
+  zoom: 8,
+  zoomControl: false,
+  attributionControl: false
 });
+
+// 高德街道图
+L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+  subdomains: ['1','2','3','4'],
+  maxZoom: 18,
+  minZoom: 6
+}).addTo(map);
+
+new L.Control.Zoom({position:'topright'}).addTo(map);
+
+cluster = L.markerClusterGroup({
+  chunkedLoading: true,
+  maxClusterRadius: 55,
+  spiderfyOnMaxZoom: true,
+  showCoverageOnHover: false,
+  zoomToBoundsOnClick: true
+});
+map.addLayer(cluster);
+
+// 加载数据
+var xhr = new XMLHttpRequest();
+xhr.open('GET', 'data/yunnan_rose_sites.min.json', true);
+xhr.onload = function(){
+  if(xhr.status === 200){
+    allData = JSON.parse(xhr.responseText);
+    document.getElementById('loading').style.display = 'none';
+    doRender();
+  }
+};
+xhr.onerror = function(){
+  document.getElementById('loading').innerHTML = '数据加载失败, 请刷新重试';
+};
+xhr.send();
+})();
 </script>
 </body>
 </html>
