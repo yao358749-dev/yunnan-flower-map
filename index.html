@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云南省花卉种植基地 · 交互地图</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'KaiTi','STKaiti','楷体','Microsoft YaHei',serif;overflow:hidden;height:100vh;display:flex;background:#faf5f0}
+#sidebar{width:360px;background:linear-gradient(180deg,#3d2b2f 0%,#5c3d44 40%,#4a3038 100%);color:#f0e0d6;display:flex;flex-direction:column;z-index:1000;box-shadow:4px 0 24px rgba(0,0,0,0.2)}
+#sidebar .header{padding:24px 22px 16px;border-bottom:1px solid rgba(255,255,255,0.08)}
+#sidebar .header h1{font-size:24px;font-weight:700;letter-spacing:3px;color:#f5e6d8;margin-bottom:4px}
+#sidebar .header .sub{font-size:13px;color:#c4a8a0}
+#sidebar .stats{padding:16px 22px;display:flex;gap:12px;flex-wrap:wrap}
+#sidebar .stats .s{flex:1;min-width:80px;background:rgba(255,255,255,0.05);border-radius:10px;padding:14px 12px;text-align:center;border-left:3px solid #d4956b}
+#sidebar .stats .s .n{font-size:26px;font-weight:700;color:#f0dcc8}
+#sidebar .stats .s .l{font-size:11px;color:#b09088;margin-top:2px}
+#sidebar .filters{padding:0 22px;flex:1;overflow-y:auto}
+#sidebar .filters h3{font-size:14px;color:#c4a8a0;margin-bottom:8px;font-weight:400}
+#sidebar .filters .tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+#sidebar .filters .tags span{padding:6px 12px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid rgba(255,255,255,0.15);color:#d4c0b0;transition:0.3s;white-space:nowrap}
+#sidebar .filters .tags span:hover,.sidebar .filters .tags span.active{background:rgba(212,149,107,0.3);border-color:#d4956b;color:#f0dcc8}
+#sidebar .search{padding:12px 22px;border-top:1px solid rgba(255,255,255,0.08)}
+#sidebar .search input{width:100%;padding:12px 16px;border-radius:20px;border:none;background:rgba(255,255,255,0.08);color:#f0dcc8;font-family:inherit;font-size:14px;outline:none}
+#sidebar .search input::placeholder{color:#a08080}
+#sidebar .footer{padding:14px 22px;font-size:10px;color:#8a6a6a;text-align:center;border-top:1px solid rgba(255,255,255,0.06)}
+#map{flex:1;z-index:1}
+.leaflet-popup-content{font-family:'KaiTi','STKaiti','楷体','Microsoft YaHei',serif;font-size:13px}
+.leaflet-popup-content b{color:#5c3d44}
+.marker-cluster-small{background-color:rgba(180,120,130,0.5)}
+.marker-cluster-small div{background-color:rgba(140,80,90,0.8);color:#fff}
+.marker-cluster-medium{background-color:rgba(160,90,100,0.5)}
+.marker-cluster-medium div{background-color:rgba(120,60,70,0.8);color:#fff}
+.marker-cluster-large{background-color:rgba(140,60,70,0.5)}
+.marker-cluster-large div{background-color:rgba(100,40,50,0.8);color:#fff}
+#info-panel{position:absolute;bottom:20px;right:20px;background:rgba(255,255,255,0.92);border-radius:12px;padding:12px 18px;z-index:999;font-size:12px;color:#5c3d44;box-shadow:0 2px 12px rgba(0,0,0,0.08);pointer-events:none}
+@media(max-width:768px){#sidebar{width:100%;height:auto;position:absolute;bottom:0;z-index:1000;max-height:40vh}#map{height:60vh}}
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+<div class="header">
+  <h1>云 南 花 卉</h1>
+  <div class="sub">种植基地交互地图 · Yunnan Flower Planting Sites</div>
+</div>
+<div class="stats">
+  <div class="s"><div class="n" id="total-count">1548</div><div class="l">种植点位</div></div>
+  <div class="s"><div class="n" id="city-count">16</div><div class="l">覆盖州市</div></div>
+  <div class="s"><div class="n" id="filtered-count">1548</div><div class="l">当前显示</div></div>
+</div>
+<div class="search">
+  <input type="text" id="search-input" placeholder="🔍 搜索基地名称、地址..." oninput="doSearch()">
+</div>
+<div class="filters">
+  <h3>▸ 按城市筛选</h3>
+  <div class="tags" id="city-tags"></div>
+  <h3>▸ 按类型筛选</h3>
+  <div class="tags" id="type-tags"></div>
+</div>
+<div class="footer">
+  数据来源: 高德地图POI · 云南省16州市<br>2025年7月采集
+</div>
+</div>
+
+<div id="map"></div>
+<div id="info-panel">点击标记查看详情 | 滚轮缩放 | 拖拽移动</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+// ============================================================
+// 数据内嵌 (1548个点位, 240KB压缩)
+// ============================================================
+const DATA_URL = 'data/yunnan_rose_sites.min.json';
+let allData = [];
+let markerCluster;
+let map;
+let activeCity = null;
+let activeType = null;
+let searchTerm = '';
+
+// 图标
+const icons = {
+  default: L.divIcon({html:'<div style="width:14px;height:14px;border-radius:50%;background:#c44b5a;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+  rose: L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#e0556a;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35)"></div>',iconSize:[16,16],popupAnchor:[0,-8]}),
+  park: L.divIcon({html:'<div style="width:14px;height:14px;border-radius:3px;background:#d4956b;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+  company: L.divIcon({html:'<div style="width:14px;height:14px;border-radius:3px;background:#8b5e6b;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',iconSize:[14,14],popupAnchor:[0,-7]}),
+};
+
+function getIcon(kw) {
+  if (kw.includes('玫瑰') || kw.includes('月季')) return icons.rose;
+  if (kw.includes('庄园') || kw.includes('园区') || kw.includes('花海')) return icons.park;
+  if (kw.includes('基地') || kw.includes('合作社') || kw.includes('企业')) return icons.company;
+  return icons.default;
+}
+
+function getType(kw) {
+  if (kw.includes('玫瑰') || kw.includes('月季')) return '月季/玫瑰';
+  if (kw.includes('庄园') || kw.includes('花海')) return '观光庄园';
+  if (kw.includes('园区') || kw.includes('产业')) return '产业园区';
+  if (kw.includes('合作社')) return '合作社';
+  if (kw.includes('育种') || kw.includes('种质')) return '育种/种质';
+  return '种植基地';
+}
+
+// 加载数据
+fetch(DATA_URL).then(r => r.json()).then(data => {
+  allData = data;
+  initMap();
+  initFilters();
+  renderMarkers();
+}).catch(err => {
+  console.error('数据加载失败:', err);
+  document.getElementById('map').innerHTML = '<div style="padding:40px;text-align:center;color:#888">数据加载中...请确保 data/yunnan_rose_sites.min.json 文件存在</div>';
+});
+
+function initMap() {
+  map = L.map('map', {
+    center: [25.0, 102.0],
+    zoom: 8,
+    zoomControl: true,
+    attributionControl: false
+  });
+
+  // 高德卫星 + 街道混合底图
+  L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
+    subdomains: ['1','2','3','4'],
+    maxZoom: 18,
+    minZoom: 6
+  }).addTo(map);
+
+  // 半透明标注层
+  L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}', {
+    subdomains: ['1','2','3','4'],
+    maxZoom: 18,
+    opacity: 0.5
+  }).addTo(map);
+
+  markerCluster = L.markerClusterGroup({
+    chunkedLoading: true,
+    maxClusterRadius: 50,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
+  });
+  map.addLayer(markerCluster);
+}
+
+function renderMarkers() {
+  markerCluster.clearLayers();
+  let count = 0;
+
+  allData.forEach(pt => {
+    // 筛选
+    if (activeCity && pt.t !== activeCity) return;
+    if (activeType && getType(pt.k) !== activeType) return;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      if (!pt.n.toLowerCase().includes(q) && !pt.a.toLowerCase().includes(q)) return;
+    }
+
+    const marker = L.marker([pt.c[1], pt.c[0]], {icon: getIcon(pt.k)});
+    marker.bindPopup(`
+      <div style="min-width:200px">
+        <b style="font-size:14px">${pt.n}</b><br>
+        <span style="color:#888;font-size:11px">${pt.t} | ${pt.k}</span><br>
+        <span style="color:#666;font-size:12px">📍 ${pt.a || '地址未详'}</span>
+      </div>
+    `);
+    markerCluster.addLayer(marker);
+    count++;
+  });
+
+  document.getElementById('filtered-count').textContent = count;
+}
+
+function initFilters() {
+  // 城市筛选
+  const cities = [...new Set(allData.map(d => d.t))].sort();
+  const cityDiv = document.getElementById('city-tags');
+  cityDiv.innerHTML = '<span class="active" onclick="filterCity(null,this)">全部</span>';
+  cities.forEach(c => {
+    cityDiv.innerHTML += `<span onclick="filterCity('${c}',this)">${c}</span>`;
+  });
+
+  // 类型筛选
+  const types = [...new Set(allData.map(d => getType(d.k)))].sort();
+  const typeDiv = document.getElementById('type-tags');
+  typeDiv.innerHTML = '<span class="active" onclick="filterType(null,this)">全部</span>';
+  types.forEach(t => {
+    typeDiv.innerHTML += `<span onclick="filterType('${t}',this)">${t}</span>`;
+  });
+}
+
+function filterCity(city, el) {
+  activeCity = city;
+  document.querySelectorAll('#city-tags span').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderMarkers();
+}
+
+function filterType(type, el) {
+  activeType = type;
+  document.querySelectorAll('#type-tags span').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderMarkers();
+}
+
+function doSearch() {
+  searchTerm = document.getElementById('search-input').value.trim();
+  renderMarkers();
+}
+</script>
+</body>
+</html>
