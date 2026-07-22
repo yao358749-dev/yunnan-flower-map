@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>纹绣月季 · 全国空间热度图</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'KaiTi','STKaiti','楷体',serif;background:#faf5ef;height:100vh;overflow:hidden}
+#map{width:100%;height:100%;background:#f0ebe0}
+#topbar{position:absolute;top:16px;left:24px;z-index:999;pointer-events:none}
+#topbar h1{font-size:22px;font-weight:700;color:#2c3829;letter-spacing:2px;text-shadow:0 1px 2px rgba(255,255,255,0.8)}
+#topbar span{font-size:12px;color:#8a8070}
+#legend{position:absolute;bottom:28px;left:24px;z-index:999;background:rgba(255,255,255,0.88);border-radius:10px;padding:14px 18px;box-shadow:0 1px 8px rgba(0,0,0,0.06);font-size:11px}
+#legend .bar{width:140px;height:10px;border-radius:5px;background:linear-gradient(90deg,#2c7fb8,#5fa2c8,#a8d5a2,#f5e56c,#f0a040,#d8382a);margin:6px 0}
+#legend .labels{display:flex;justify-content:space-between;color:#888;font-size:10px}
+#toggle{position:absolute;top:18px;right:24px;z-index:999;display:flex;gap:8px}
+#toggle button{padding:8px 18px;border-radius:20px;border:1px solid #d8c8b8;background:rgba(255,255,255,0.85);font-family:inherit;font-size:12px;color:#2c3829;cursor:pointer;transition:0.3s}
+#toggle button.on{background:#2c3829;color:#e6dac8;border-color:#2c3829}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="topbar"><h1>纹绣月季 · 全国空间热度图</h1><span>Wenxiu Rose National Heat Map · 花卉观光POI核密度</span></div>
+
+<div id="toggle">
+  <button class="on" onclick="setLayer('heat')">热力模式</button>
+  <button onclick="setLayer('point')">点位模式</button>
+</div>
+
+<div id="legend">
+  <div style="font-weight:700;color:#2c3829;margin-bottom:6px">空间热度</div>
+  <div class="bar"></div>
+  <div class="labels"><span>低</span><span>中</span><span>高</span></div>
+  <div style="margin-top:6px;color:#888">5518个花卉景点 · 28个城市</div>
+  <div style="color:#aaa;font-size:9px;margin-top:2px">权重: 网红打卡×3 | 花海景区×2 | 花卉旅游×1</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script>
+let heatLayer, markerLayer, map;
+
+map = L.map('map', {
+  center: [29, 106],
+  zoom: 6,
+  zoomControl: false,
+  attributionControl: false
+});
+
+new L.Control.Zoom({position:'topright'}).addTo(map);
+
+L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+  subdomains: ['1','2','3','4'],
+  maxZoom: 16, minZoom: 5
+}).addTo(map);
+
+// 加载热力数据
+fetch('data/wenxiu_heat.json')
+  .then(r => r.json())
+  .then(data => {
+    heatLayer = L.heatLayer(data, {
+      radius: 25,
+      blur: 15,
+      maxZoom: 10,
+      max: 1.0,
+      gradient: {0.1:'#2c7fb8', 0.3:'#5fa2c8', 0.5:'#a8d5a2', 0.7:'#f5e56c', 0.85:'#f0a040', 1.0:'#d8382a'}
+    }).addTo(map);
+
+    // 点位模式(备用)
+    markerLayer = L.layerGroup();
+    data.forEach(pt => {
+      if (pt[2] > 0.5) {
+        L.circleMarker([pt[0], pt[1]], {
+          radius: pt[2] * 8,
+          fillColor: '#d8382a',
+          color: '#fff',
+          weight: 0.5,
+          fillOpacity: 0.6
+        }).addTo(markerLayer);
+      }
+    });
+  });
+
+function setLayer(mode) {
+  document.querySelectorAll('#toggle button').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('#toggle button').forEach(b => {
+    if (b.textContent.includes(mode === 'heat' ? '热力' : '点位')) b.classList.add('on');
+  });
+  if (mode === 'heat') {
+    if (markerLayer) map.removeLayer(markerLayer);
+    if (heatLayer) map.addLayer(heatLayer);
+  } else {
+    if (heatLayer) map.removeLayer(heatLayer);
+    if (markerLayer) map.addLayer(markerLayer);
+  }
+}
+</script>
+</body>
+</html>
