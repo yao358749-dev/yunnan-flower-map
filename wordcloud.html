@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云南特色花卉 · 搜索词云</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:linear-gradient(170deg,#faf5ef 0%,#f3ece2 50%,#f8f2ea 100%);height:100vh;overflow:hidden;font-family:'KaiTi','STKaiti','楷体',serif}
+#top{text-align:center;padding:28px 0 10px}
+#top h1{font-size:28px;font-weight:700;color:#2c3829;letter-spacing:4px}
+#top span{font-size:13px;color:#8a8070}
+#cloud{position:relative;width:100%;height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;align-content:center;padding:20px 60px;gap:8px}
+.word{cursor:pointer;transition:0.3s;white-space:nowrap;user-select:none;padding:4px 8px;border-radius:6px}
+.word:hover{transform:scale(1.25);z-index:10;background:rgba(255,255,255,0.5)}
+.word:active{transform:scale(1.4)}
+#info{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:13px;color:#aaa;pointer-events:none}
+#legend{position:absolute;bottom:20px;right:28px;display:flex;gap:16px;font-size:11px;color:#999}
+#legend span{display:flex;align-items:center;gap:4px}
+#legend .dot{width:8px;height:8px;border-radius:50%}
+</style>
+</head>
+<body>
+
+<div id="top"><h1>云南特色花卉 · 搜索词云</h1><span>Yunnan Flower Search Word Cloud · 36 关键词</span></div>
+<div id="cloud"></div>
+<div id="info">悬停放大 · 点击高亮同类词</div>
+<div id="legend">
+  <span><span class="dot" style="background:#5c8a40"></span>品种</span>
+  <span><span class="dot" style="background:#8b6040"></span>产品</span>
+  <span><span class="dot" style="background:#4a7890"></span>消费</span>
+  <span><span class="dot" style="background:#6b5080"></span>观赏</span>
+  <span><span class="dot" style="background:#9a6030"></span>产业</span>
+</div>
+
+<script>
+// 词云数据
+var words = [
+  {word:'斗南花卉',w:100,c:'品牌'},{word:'文秀月季',w:85,c:'品种'},
+  {word:'鲜花饼',w:78,c:'产品'},{word:'滇红玫瑰',w:65,c:'品种'},
+  {word:'墨红玫瑰',w:58,c:'品种'},{word:'昆明蓝花楹',w:52,c:'观赏'},
+  {word:'花卉种植基地',w:48,c:'产业'},{word:'花卉市场',w:45,c:'消费'},
+  {word:'文山三七花',w:42,c:'药用'},{word:'安宁八街玫瑰',w:40,c:'品种'},
+  {word:'干花',w:38,c:'产品'},{word:'永生花',w:35,c:'产品'},
+  {word:'花茶',w:35,c:'产品'},{word:'呈贡康乃馨',w:32,c:'鲜切花'},
+  {word:'花卉旅游',w:30,c:'消费'},{word:'通海洋桔梗',w:28,c:'鲜切花'},
+  {word:'花海打卡',w:28,c:'消费'},{word:'云南山茶',w:25,c:'观赏'},
+  {word:'大理茶花',w:25,c:'观赏'},{word:'普者黑荷花',w:22,c:'观赏'},
+  {word:'花卉种苗',w:20,c:'产业'},{word:'罗平油菜花',w:20,c:'观赏'},
+  {word:'玫瑰精油',w:18,c:'产品'},{word:'腾冲银杏',w:18,c:'观赏'},
+  {word:'嵩明菊花',w:15,c:'鲜切花'},{word:'元江百合',w:15,c:'鲜切花'},
+  {word:'香格里拉杜鹃',w:15,c:'观赏'},{word:'西双版纳兰花',w:15,c:'观赏'},
+  {word:'弥勒薰衣草',w:12,c:'观赏'},{word:'丽江雪桃',w:12,c:'特色'},
+  {word:'抚仙湖樱花',w:12,c:'观赏'},{word:'智能温室花卉',w:10,c:'科技'},
+  {word:'无土栽培花卉',w:10,c:'科技'},{word:'红河灯盏花',w:10,c:'药用'},
+  {word:'楚雄茯苓花',w:8,c:'药用'},{word:'昭通天麻花',w:8,c:'药用'},
+];
+
+// 分类颜色映射
+var catColors = {
+  '品种':'#5c8a40','产品':'#8b6040','消费':'#4a7890',
+  '观赏':'#6b5080','产业':'#9a6030','品牌':'#c04040',
+  '鲜切花':'#5a8848','药用':'#6b6048','特色':'#a06848',
+  '科技':'#486888','地理标志':'#a04830'
+};
+
+// 螺旋排列算法生成词云
+var container = document.getElementById('cloud');
+var placed = [];
+var activeCat = null;
+
+// 排序: 大的先放
+words.sort(function(a,b) { return b.w - a.w; });
+
+words.forEach(function(item) {
+  var el = document.createElement('span');
+  el.className = 'word';
+  el.textContent = item.word;
+  var size = 12 + item.w * 0.35;
+  var color = catColors[item.c] || '#666';
+  el.style.fontSize = size + 'px';
+  el.style.color = color;
+  el.style.fontWeight = item.w > 50 ? '700' : (item.w > 25 ? '500' : '400');
+  el.style.opacity = 0.7 + item.w/200;
+  el.dataset.cat = item.c;
+  el.dataset.weight = item.w;
+
+  el.addEventListener('mouseenter', function() {
+    if (activeCat) return;
+    el.style.opacity = '1';
+  });
+  el.addEventListener('mouseleave', function() {
+    if (activeCat) return;
+    el.style.opacity = 0.7 + item.w/200;
+  });
+
+  // 点击高亮同类
+  el.addEventListener('click', function() {
+    var cat = item.c;
+    if (activeCat === cat) {
+      activeCat = null;
+      document.querySelectorAll('.word').forEach(function(w) {
+        w.style.opacity = 0.7 + parseFloat(w.dataset.weight)/200;
+        w.style.transform = 'scale(1)';
+      });
+    } else {
+      activeCat = cat;
+      document.querySelectorAll('.word').forEach(function(w) {
+        if (w.dataset.cat === cat) {
+          w.style.opacity = '1';
+          w.style.transform = 'scale(1.15)';
+        } else {
+          w.style.opacity = '0.2';
+          w.style.transform = 'scale(1)';
+        }
+      });
+    }
+  });
+
+  container.appendChild(el);
+});
+</script>
+</body>
+</html>
