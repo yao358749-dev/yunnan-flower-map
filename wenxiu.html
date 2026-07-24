@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>纹绣月季 · 全国空间热度</title>
+<title>文秀月季 · 全国空间热度</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -27,7 +27,7 @@ body{background:#faf6ee;height:100vh;overflow:hidden;font-family:'KaiTi','STKait
 <body>
 
 <div id="map"></div>
-<div id="top"><h1>纹绣月季 · 空间热度</h1><span>Wenxiu Rose Spatial Heat · 5518 POIs · 网红打卡×3 花海×2 旅游×1</span></div>
+<div id="top"><h1>文秀月季 · 空间热度</h1><span>Wenxiu Rose Spatial Heat · 5518 POIs · 网红打卡×3 花海×2 旅游×1</span></div>
 
 <div id="toggle">
   <button class="on" onclick="setLayer('heat')">热力图</button>
@@ -36,7 +36,7 @@ body{background:#faf6ee;height:100vh;overflow:hidden;font-family:'KaiTi','STKait
 
 <div id="legend">
   <div class="t">热度</div>
-  <div class="bar" style="background:linear-gradient(90deg,#fef0c8,#f5c860,#e89830,#d05520,#9a1a10)"></div>
+  <div class="bar" style="background:linear-gradient(90deg,#fffbe6,#fff3b8,#ffe48a,#f5c060,#c07030)"></div>
   <div class="l"><span>低</span><span></span><span></span><span></span><span>高</span></div>
   <div class="n">28城 · 5518点位</div>
 </div>
@@ -71,16 +71,16 @@ fetch('data/china_outline.json')
       // 转为[lat,lon]格式
       var latlngs = p.c.map(function(pt) { return [pt[1], pt[0]]; });
       L.polygon(latlngs, {
-        fillColor: '#faf3e6',
-        fillOpacity: 1,
-        color: '#d4c8b0',
-        weight: 0.6,
+        fillColor: '#fefaf2',
+        fillOpacity: 0.9,
+        color: '#d8ccb8',
+        weight: 0.5,
         interactive: false
       }).addTo(chinaLayer);
     });
   });
 
-// 热力数据
+// 热力数据 (确保在中国填充层之上)
 fetch('data/wenxiu_heat.json')
   .then(r => r.json())
   .then(data => {
@@ -91,21 +91,24 @@ fetch('data/wenxiu_heat.json')
       max: 1.0,
       gradient: {
         0.0: 'rgba(0,0,0,0)',
-        0.1: '#fef0c8',
-        0.25: '#f5c860',
-        0.45: '#e89830',
-        0.65: '#d05520',
-        0.85: '#9a1a10',
-        1.0: '#680808'
+        0.1: '#fffbe6',
+        0.25: '#fff3b8',
+        0.45: '#ffe48a',
+        0.65: '#f5c060',
+        0.85: '#e0a040',
+        1.0: '#c07030'
       }
-    }).addTo(map);
+    });
+    heatLayer.setZIndex(1000);
+    heatLayer.addTo(map);
+    heatLayer.bringToFront();
 
     markerLayer = L.layerGroup();
     data.forEach(function(pt) {
       if (pt[2] > 0.4) {
         L.circleMarker([pt[0], pt[1]], {
           radius: pt[2] * 7,
-          fillColor: pt[2] > 0.75 ? '#d05520' : (pt[2] > 0.55 ? '#e89830' : '#f5c860'),
+          fillColor: pt[2] > 0.75 ? '#e0a040' : (pt[2] > 0.55 ? '#f5c060' : '#ffe48a'),
           color: 'rgba(255,255,255,0.3)',
           weight: 0.4,
           fillOpacity: 0.6
