@@ -7,87 +7,108 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#f7f3ee;height:100vh;overflow:hidden;font-family:'KaiTi','STKaiti','楷体',serif}
-#map{width:100%;height:100%}
-#top{position:absolute;top:24px;left:32px;z-index:999;pointer-events:none}
-#top h1{font-size:26px;font-weight:700;color:#3a2828;letter-spacing:4px;margin-bottom:2px;text-shadow:0 1px 0 rgba(255,255,255,0.6)}
-#top span{font-size:12px;color:#9a8880;letter-spacing:1px}
-#legend{position:absolute;bottom:32px;left:32px;z-index:999;background:rgba(255,255,255,0.9);border-radius:12px;padding:16px 20px;box-shadow:0 2px 16px rgba(0,0,0,0.05)}
-#legend .t{font-size:12px;font-weight:700;color:#3a2828;margin-bottom:8px}
-#legend .bar{width:160px;height:6px;border-radius:3px;margin:4px 0}
-#legend .l{display:flex;justify-content:space-between;font-size:10px;color:#b0a098}
-#legend .n{font-size:10px;color:#c0b0a8;margin-top:4px}
-#toggle{position:absolute;top:26px;right:32px;z-index:999;display:flex;gap:8px}
-#toggle button{padding:7px 18px;border-radius:18px;border:1px solid #ddd0c0;background:rgba(255,255,255,0.82);font-family:inherit;font-size:12px;color:#6a5a50;cursor:pointer;transition:0.25s;letter-spacing:1px}
-#toggle button:hover{background:#fff}
-#toggle button.on{background:#3a2828;color:#f0e4d4;border-color:#3a2828}
-.leaflet-control-zoom{border:none!important;box-shadow:0 2px 8px rgba(0,0,0,0.06)!important}
-.leaflet-control-zoom a{background:#fff!important;color:#3a2828!important;border-radius:8px!important;margin:3px!important;border:none!important}
+body{background:#faf6ee;height:100vh;overflow:hidden;font-family:'KaiTi','STKaiti','楷体',serif}
+#map{width:100%;height:100%;background:#faf6ee}
+#top{position:absolute;top:24px;left:50%;transform:translateX(-50%);z-index:999;pointer-events:none;text-align:center}
+#top h1{font-size:26px;font-weight:700;color:#4a3028;letter-spacing:4px}
+#top span{font-size:12px;color:#a09080;letter-spacing:1px}
+#legend{position:absolute;bottom:28px;right:28px;z-index:999;background:rgba(255,255,255,0.88);border-radius:10px;padding:14px 18px;box-shadow:0 2px 12px rgba(0,0,0,0.05)}
+#legend .t{font-size:11px;font-weight:700;color:#4a3028;margin-bottom:6px}
+#legend .bar{width:150px;height:6px;border-radius:3px}
+#legend .l{display:flex;justify-content:space-between;font-size:9px;color:#b0a090;margin-top:3px}
+#legend .n{font-size:9px;color:#c0b0a0;margin-top:4px}
+#toggle{position:absolute;bottom:28px;left:28px;z-index:999;display:flex;gap:6px}
+#toggle button{padding:6px 14px;border-radius:14px;border:1px solid #d8c8b0;background:rgba(255,255,255,0.85);font-family:inherit;font-size:11px;color:#6a5040;cursor:pointer;transition:0.25s}
+#toggle button.on{background:#4a3028;color:#f0e4d0;border-color:#4a3028}
+.leaflet-control-zoom{border:none!important;box-shadow:0 2px 8px rgba(0,0,0,0.05)!important}
+.leaflet-control-zoom a{background:#fff!important;color:#4a3028!important;border-radius:8px!important;margin:3px!important;border:none!important}
 </style>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="top"><h1>纹绣月季 · 空间热度</h1><span>Wenxiu Rose Spatial Heat · 5518 POIs</span></div>
+<div id="top"><h1>纹绣月季 · 空间热度</h1><span>Wenxiu Rose Spatial Heat · 5518 POIs · 网红打卡×3 花海×2 旅游×1</span></div>
 
 <div id="toggle">
-  <button class="on" onclick="setLayer('heat')">热力</button>
-  <button onclick="setLayer('point')">点位</button>
+  <button class="on" onclick="setLayer('heat')">热力图</button>
+  <button onclick="setLayer('point')">散点图</button>
 </div>
 
 <div id="legend">
-  <div class="t">▲ 热度强度</div>
-  <div class="bar" style="background:linear-gradient(90deg,#f2ead8,#e8c49a,#d49160,#b85540,#7a2030)"></div>
+  <div class="t">热度</div>
+  <div class="bar" style="background:linear-gradient(90deg,#fef0c8,#f5c860,#e89830,#d05520,#9a1a10)"></div>
   <div class="l"><span>低</span><span></span><span></span><span></span><span>高</span></div>
-  <div class="n">网红打卡×3 · 花海景区×2 · 旅游×1</div>
+  <div class="n">28城 · 5518点位</div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script>
-var heatLayer, markerLayer, map;
+var heatLayer, markerLayer, chinaLayer, map;
 
 map = L.map('map', {
-  center: [29, 106],
-  zoom: 6,
+  center: [32, 108],
+  zoom: 5,
   minZoom: 3,
-  maxZoom: 16,
+  maxZoom: 14,
   zoomControl: true,
   attributionControl: false
 });
 
+// 图层顺序: 底图(淡色) → 中国省界 → 热力
 L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
   subdomains: ['1','2','3','4'],
-  maxNativeZoom: 18, maxZoom: 18
+  maxZoom: 18,
+  opacity: 0.35
 }).addTo(map);
 
+// 中国省界填充层
+chinaLayer = L.layerGroup().addTo(map);
+fetch('data/china_outline.json')
+  .then(r => r.json())
+  .then(polys => {
+    polys.forEach(p => {
+      // 转为[lat,lon]格式
+      var latlngs = p.c.map(function(pt) { return [pt[1], pt[0]]; });
+      L.polygon(latlngs, {
+        fillColor: '#faf3e6',
+        fillOpacity: 1,
+        color: '#d4c8b0',
+        weight: 0.6,
+        interactive: false
+      }).addTo(chinaLayer);
+    });
+  });
+
+// 热力数据
 fetch('data/wenxiu_heat.json')
   .then(r => r.json())
   .then(data => {
     heatLayer = L.heatLayer(data, {
-      radius: 30, blur: 20, maxZoom: 12, max: 1.0,
+      radius: 32,
+      blur: 22,
+      maxZoom: 11,
+      max: 1.0,
       gradient: {
         0.0: 'rgba(0,0,0,0)',
-        0.1: '#f2ead8',
-        0.3: '#e8c49a',
-        0.5: '#d49160',
-        0.7: '#b85540',
-        0.85: '#8a2a3a',
-        1.0: '#5c1018'
+        0.1: '#fef0c8',
+        0.25: '#f5c860',
+        0.45: '#e89830',
+        0.65: '#d05520',
+        0.85: '#9a1a10',
+        1.0: '#680808'
       }
     }).addTo(map);
 
     markerLayer = L.layerGroup();
     data.forEach(function(pt) {
-      if (pt[2] > 0.5) {
-        var alpha = pt[2];
-        var color = alpha > 0.8 ? '#8a2a3a' : (alpha > 0.65 ? '#b85540' : '#d49160');
+      if (pt[2] > 0.4) {
         L.circleMarker([pt[0], pt[1]], {
-          radius: pt[2] * 8,
-          fillColor: color,
-          color: 'rgba(255,255,255,0.4)',
-          weight: 0.5,
-          fillOpacity: 0.65
+          radius: pt[2] * 7,
+          fillColor: pt[2] > 0.75 ? '#d05520' : (pt[2] > 0.55 ? '#e89830' : '#f5c860'),
+          color: 'rgba(255,255,255,0.3)',
+          weight: 0.4,
+          fillOpacity: 0.6
         }).addTo(markerLayer);
       }
     });
@@ -98,7 +119,7 @@ function setLayer(mode) {
   btns.forEach(function(b) { b.classList.remove('on'); });
   btns.forEach(function(b) {
     if ((mode === 'heat' && b.textContent.indexOf('热力') >= 0) ||
-        (mode === 'point' && b.textContent.indexOf('点位') >= 0)) b.classList.add('on');
+        (mode === 'point' && b.textContent.indexOf('散点') >= 0)) b.classList.add('on');
   });
   if (mode === 'heat') {
     if (markerLayer) map.removeLayer(markerLayer);
