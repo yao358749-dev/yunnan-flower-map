@@ -12,6 +12,14 @@ video{position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:cover}
 </head>
 <body>
 <video id="v" src="opening.mp4" controls playsinline></video>
-<script>document.getElementById('v').addEventListener('click',function(e){e.preventDefault()})</script>
+<script>
+var v=document.getElementById('v');
+v.addEventListener('click',function(e){e.preventDefault()});
+new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.intersectionRatio<1){v.pause()}
+  })
+},{threshold:[1]}).observe(v);
+</script>
 </body>
 </html>
