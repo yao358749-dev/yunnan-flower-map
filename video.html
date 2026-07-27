@@ -11,6 +11,7 @@ video{position:fixed;top:0;left:0;width:100vw;height:100vh;object-fit:cover}
 </style>
 </head>
 <body>
-<video src="opening.mp4" controls playsinline></video>
+<video id="v" src="opening.mp4" controls playsinline></video>
+<script>document.getElementById('v').addEventListener('click',function(e){e.preventDefault()})</script>
 </body>
 </html>
